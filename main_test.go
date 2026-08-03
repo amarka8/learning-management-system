@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +9,7 @@ import (
 	"testing"
 
 	api "github.com/amarka8/learning-management-system/cmd/server"
+	"github.com/amarka8/learning-management-system/environment"
 )
 
 type healthCheckTest struct {
@@ -36,19 +36,19 @@ func assertStatus(t *testing.T, w *httptest.ResponseRecorder, expected int) {
 
 // this test checks that the health check returns {Status: ok} and a 200 status code
 func TestHealthCheck(t *testing.T) {
-	handler := api.NewDataDocHandler("", "", "")
+	handler := api.NewDataDocHandler(environment.Null())
 	resp := sendRequest(handler, "GET", "/health", "")
 	assertStatus(t, resp, 200)
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Failed to read response body, health check failed")
-		return
+		t.Fatalf("read response body: %v", err)
 	}
 	var result healthCheckTest
 	err = json.Unmarshal(body, &result)
 	if err != nil {
-		fmt.Println("Error unmarshaling response body")
-		return
+		t.Fatalf("unmarshal response body: %v", err)
 	}
-	fmt.Printf("status: %s", result.Status)
+	if result.Status != "ok" {
+		t.Errorf("expected health status ok, got %q", result.Status)
+	}
 }

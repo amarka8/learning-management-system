@@ -1,45 +1,37 @@
-// This Package
+// This Package is responsible for defining the API requests to create new datadocs, which represent new
+// learning journeys/timelines
 
 package server
 
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/amarka8/learning-management-system/environment"
 )
 
 type Auth interface {
 	authorize(tok string) bool
 }
 
-type logger interface {
-	Error(s string)
-	Info(s string)
-}
-
-type config struct {
-	// login_user  string
-	db_host     string
-	db_user     string
-	db_password string
-	// url         string
-	// port        string
-}
-
 type querybook struct {
-	cf  config
-	log logger
+	env *environment.Env
 }
 
 type healthcheck struct {
 	Status string
 }
 
-func NewDataDocHandler(db_host string, db_user string, db_password string, log logger) http.Handler {
-	qbook := querybook{config{db_host: db_host, db_user: db_user, db_password: db_password}, log}
+func NewDataDocHandler(env *environment.Env) http.Handler {
+	if env == nil {
+		env = environment.Null()
+	}
+
+	qbook := querybook{env: env}
 	mux := http.NewServeMux()
 	mux.HandleFunc("OPTIONS /health", optionsHealthCheck)
 	mux.HandleFunc("GET /health", qbook.health)
-	qbook.log.Info("Constructed API Handler in server package")
+	qbook.env.Info("Constructed API Handler in server package")
 	return mux
 }
 
@@ -54,10 +46,10 @@ func (qb *querybook) health(w http.ResponseWriter, r *http.Request) {
 	encoded, err := json.Marshal(healthcheck{Status: "ok"})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		qb.log.Error("Issue with Health Check")
+		qb.env.Error("Issue with Health Check")
 		w.Write([]byte(`"` + err.Error() + `"`))
 	}
-	qb.log.Info("Completed Health Check")
+	qb.env.Info("Completed Health Check")
 	w.WriteHeader(http.StatusOK)
 	w.Write(encoded)
 }

@@ -1,5 +1,10 @@
 package logger
 
+type Logger interface {
+	Error(s string)
+	Info(s string)
+}
+
 type RealLogger struct{}
 
 func NewRealLogger() RealLogger {
